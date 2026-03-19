@@ -16,12 +16,12 @@ echo "========================"
 
 # --- Step 1: Initial conditions ---
 echo "Making initial conditions..."
-docker run --user $(id -u):$(id -g) --rm \
+docker run --rm \
   -v "${CONFIG_DIR}":/config \
-  -v "${DOWNLOAD_DIR}/${OGCM}":/data/mercator \
+  -v "${DOWNLOAD_DIR}/${OGCM}":/data/ogcm \
   -v "${OPS_DIR}/${OGCM}":/output \
   ${CLI_IMAGE} make_ini_fcst \
-    --input_file /data/mercator/${OGCM}_${RUN_DATE}.nc \
+    --input_file /data/ogcm/${OGCM}_${RUN_DATE}.nc \
     --output_dir /output \
     --run_date "${RUN_DATE_FMT}" \
     --hdays ${HDAYS} \
@@ -29,16 +29,18 @@ docker run --user $(id -u):$(id -g) --rm \
 
 # --- Step 2: Boundary conditions ---
 echo "Making boundary conditions..."
-docker run --user $(id -u):$(id -g) --rm \
+docker run --rm \
   -v "${CONFIG_DIR}":/config \
-  -v "${DOWNLOAD_DIR}/${OGCM}":/data/mercator \
+  -v "${DOWNLOAD_DIR}/${OGCM}":/data/ogcm \
   -v "${OPS_DIR}/${OGCM}":/output \
   ${CLI_IMAGE} make_bry_fcst \
-    --input_file /data/mercator/${OGCM}_${RUN_DATE}.nc \
+    --input_file /data/ogcm/${OGCM}_${RUN_DATE}.nc \
     --output_dir /output \
     --run_date "${RUN_DATE_FMT}" \
     --hdays ${HDAYS} \
     --fdays ${FDAYS} \
     --Yorig ${YORIG}
+
+sudo chown -R $(id -u):$(id -g) "${OPS_DIR}/${OGCM}"
 
 echo "Done. INI + BRY saved to ${OPS_DIR}/${OGCM}"

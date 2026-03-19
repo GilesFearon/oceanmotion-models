@@ -13,7 +13,7 @@ echo "  CONFIG:    ${CONFIG_DIR}"
 echo "  OUTPUT:    ${OPS_DIR}/${TIDE_FRC}"
 echo "==================="
 
-docker run --user $(id -u):$(id -g) --rm \
+docker run --rm \
   -v "${CONFIG_DIR}":/config \
   -v "${TPXO_DATA_DIR}":/data/TPXO10 \
   -v "${OPS_DIR}/${TIDE_FRC}":/output \
@@ -23,5 +23,7 @@ docker run --user $(id -u):$(id -g) --rm \
     --run_date "${RUN_DATE_FMT}" \
     --hdays ${HDAYS} \
     --Yorig ${YORIG}
+
+sudo chown -R $(id -u):$(id -g) "${OPS_DIR}/${TIDE_FRC}"
 
 echo "Done. Tidal forcing saved to ${OPS_DIR}/${TIDE_FRC}"

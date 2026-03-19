@@ -20,17 +20,19 @@ mkdir -p "${SCRATCH_DIR}" "${OUTPUT_DIR}"
 # Search back up to 20 x 6-hour steps for a previous croco_rst.nc
 RST_STEP=1
 INI_FILE=""
+RUN_EPOCH=$(date -u -d "${RUN_DATE:0:4}-${RUN_DATE:4:2}-${RUN_DATE:6:2} ${RUN_DATE:9:2}:00:00" +%s)
 for i in $(seq 1 20); do
   # Calculate previous run date (i * 6 hours back)
-  prev_date=$(date -u -d "${RUN_DATE:0:4}-${RUN_DATE:4:2}-${RUN_DATE:6:2} ${RUN_DATE:9:2}:00:00 - $((i * 6)) hours" +"%Y%m%d_%H")
+  prev_epoch=$((RUN_EPOCH - i * 6 * 3600))
+  prev_date=$(date -u -d "@${prev_epoch}" +"%Y%m%d_%H")
   prev_rst="${REPO_DIR}/data/croco_ops/${prev_date}/${DOMAIN}/${MODEL}/${RUN_NAME}/output/croco_rst.nc"
   if [ -f "${prev_rst}" ]; then
     echo "Found restart file: ${prev_rst} (${i} x 6h back)"
     cp "${prev_rst}" "${SCRATCH_DIR}/croco_ini.nc"
-    # RST_STEP: number of 6-hour restart intervals back * records
-    # The restart file NRREC should be set to the record count
-    RST_STEP=$(ncdump -h "${prev_rst}" 2>/dev/null | grep "ocean_time = " | sed 's/[^0-9]//g' || echo "1")
-    [ -z "${RST_STEP}" ] && RST_STEP=1
+    # RST_STEP = record in the restart file corresponding to RUN_DATE
+    # Records are written every 6h, and the previous run started i * 6h ago,
+    # so record i corresponds to the current RUN_DATE
+    RST_STEP=${i}
     INI_FILE="restart"
     break
   fi
@@ -45,7 +47,6 @@ fi
 # --- c) Copy other input files to scratch ---
 cp "${OPS_DIR}/${OGCM}/croco_bry_${OGCM}_${RUN_DATE}.nc" "${SCRATCH_DIR}/croco_bry.nc"
 cp "${OPS_DIR}/${TIDE_FRC}/croco_frc_${TIDE_FRC}_${RUN_DATE}.nc" "${SCRATCH_DIR}/croco_frc.nc"
-cp "${DOWNLOAD_DIR}/${BLK}/for_croco"/* "${SCRATCH_DIR}/"
 cp "${CONFIG_DIR}/GRID/croco_grd.nc" "${SCRATCH_DIR}/croco_grd.nc"
 cp "${CONFIG_DIR}/${COMP}/croco" "${SCRATCH_DIR}/croco"
 
@@ -60,9 +61,8 @@ NUMAVGSURF=$((NH_AVGSURF * 3600 / DT))
 NUMHISSURF=$((NH_HISSURF * 3600 / DT))
 NUMRST=$((NH_RST * 3600 / DT))
 
-# DATA_DIR in the template points to where GFS bulk files are in scratch
-# Use escaped path for sed
-DATA_DIR_BLK=$(echo "${SCRATCH_DIR}" | sed 's|/|\\/|g')
+# DATA_DIR in the template points to where the reformatted GFS bulk files are
+DATA_DIR_BLK="${DOWNLOAD_DIR}/${BLK}/for_croco/"
 
 # Order matters: NUMHISSURF/NUMAVGSURF before NUMHIS/NUMAVG to avoid partial matches
 sed -e 's|DTNUM|'"${DT}"'|' \
@@ -105,10 +105,10 @@ else
 fi
 
 # --- f) Archive output ---
-mv -f croco_his.nc "${OUTPUT_DIR}/croco_his.nc"
+#mv -f croco_his.nc "${OUTPUT_DIR}/croco_his.nc"
 mv -f croco_rst.nc "${OUTPUT_DIR}/croco_rst.nc"
 mv -f croco_avg.nc "${OUTPUT_DIR}/croco_avg.nc"
-mv -f croco_his_surf.nc "${OUTPUT_DIR}/croco_his_surf.nc"
+#mv -f croco_his_surf.nc "${OUTPUT_DIR}/croco_his_surf.nc"
 mv -f croco_avg_surf.nc "${OUTPUT_DIR}/croco_avg_surf.nc"
 
 echo "Done. Output archived to ${OUTPUT_DIR}"

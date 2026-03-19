@@ -14,13 +14,13 @@ DTFAST=60
 # Output frequency (in hours)
 #
 # full domain output
-NH_AVG=1
-NH_HIS=24
+NH_AVG=6
+NH_HIS=24 # not actually used as we set the history file output to NUMTIMES not NUMHIS
 # surface output
 NH_AVGSURF=1
-NH_HISSURF=24
+NH_HISSURF=24 # also not actually used
 # station output
-NH_STA=1
+NH_STA=1 # also not used
 # restart file
 # (writing at 6 hourly intervals gives us flexibility for restarting from a previous run which might have been run say 18 hours ago)
 NH_RST=6
