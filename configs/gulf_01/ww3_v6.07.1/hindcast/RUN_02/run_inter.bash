@@ -1,0 +1,148 @@
+#!/bin/bash
+
+#unalias cp
+#unalias mv
+#limit coredumpsize unlimited
+CP=/bin/cp
+MV=/bin/mv
+LN=/bin/ln
+MK=/bin/mkdir
+
+# read in the environment variables
+source myenv_inter.sh
+
+# create the scratch and output dirs
+# scratch is where we'll run the model and output is where we'll send the files we want to keep
+$MK $RUN_DIR/scratch
+$MK $RUN_DIR/output
+cd $RUN_DIR/scratch
+
+# grid files
+$CP $WW3_EXE_DIR/ww3_grid .
+$CP $GRID_DIR/*.dat .
+$CP $RUN_DIR/ww3_grid.nml .
+$CP $RUN_DIR/namelists_config.nml .
+./ww3_grid | tee ww3_grid.out
+
+# boundary files
+$CP $WW3_EXE_DIR/ww3_bounc .
+$CP $RUN_DIR/ww3_bounc.nml .
+
+# surface files
+$CP $WW3_EXE_DIR/ww3_prnc .
+$CP $RUN_DIR/ww3_prnc_wind.nml .
+$CP $RUN_DIR/ww3_prnc_current.nml .
+$CP $RUN_DIR/ww3_prnc_level.nml .
+
+# shel
+$CP $WW3_EXE_DIR/ww3_shel .
+$CP $RUN_DIR/ww3_shel.nml ww3_shel_template.nml
+
+# postprocessing script to create nc outputs
+$CP $WW3_EXE_DIR/ww3_ounf .
+$CP $RUN_DIR/ww3_ounf.nml ww3_ounf_template.nml
+
+CURRENT_DATE="${MONTH_START}-01"
+END_DATE="${MONTH_END}-01"
+
+# restart file
+if [[ $RSTFLAG == 0 ]]; then
+  echo "initialising from a cold start"
+else
+  WW3_RSTFILE=$RUN_DIR/output/restart.$(date -d "$CURRENT_DATE -1 month" +%Y%m).ww3
+  echo "initialising from restart file: ${WW3_RSTFILE}"
+  $CP ${WW3_RSTFILE} restart.ww3
+fi
+
+while [ "$(date -d "$CURRENT_DATE" +%Y%m)" -le "$(date -d "$END_DATE" +%Y%m)" ]; do
+
+    # Format months
+    MONTH_NOW=$(date -d "$CURRENT_DATE" +%Y_%m)
+    MONTH_NEXT=$(date -d "$CURRENT_DATE +1 month" +%Y_%m)
+
+    echo "MONTH_NOW:  $MONTH_NOW"
+    echo "MONTH_NEXT: $MONTH_NEXT"
+    echo
+
+    # create the spectral boundary conditions
+    #$CP $BRY_DIR/$MONTH_NOW/spec.list .
+    # we need to add the path to the spec.list file to every line in the spec.list file so that the file names contain the absolute paths
+    sed 's|^|'$BRY_DIR/$MONTH_NOW/'|' $BRY_DIR/$MONTH_NOW/spec.list > spec.list
+    # replace the placeholders in the ww3_shel_template.nml file
+    sed -e 's/YMD_FIRSTDAY/'$YMD_FIRSTDAY'/g' -e 's/YMD_NEXT_FIRSTDAY/'$YMD_NEXT_FIRSTDAY'/g' -e 's/YMD_LASTDAY/'$YMD_LASTDAY'/g' < ww3_shel_template.nml > ww3_shel.nml
+    ./ww3_bounc | tee ww3_bounc_$MONTH_NOW.out
+
+    # ----- WIND FORCING -----
+    # using the CROCO-reformatted ERA5 files, as these are easier to work with than the raw ERA5 files
+    # Specifically, this avoids having to use ncrename which has a bug that corrupts int64 time data
+    MONTH_NOW_CROCO=$(date -d "$CURRENT_DATE" +Y%YM%-m)
+    MONTH_NEXT_CROCO=$(date -d "$CURRENT_DATE +1 month" +Y%YM%-m)
+    ufile=$SRF_DIR/U10M_$MONTH_NOW_CROCO.nc
+    vfile=$SRF_DIR/V10M_$MONTH_NOW_CROCO.nc
+    ufile_next=$SRF_DIR/U10M_$MONTH_NEXT_CROCO.nc
+    vfile_next=$SRF_DIR/V10M_$MONTH_NEXT_CROCO.nc
+    #
+    rm -f wind*
+    echo 'combine U10M and V10M into a single wind.nc file'
+    $CP $ufile wind.nc
+    ncks -A $vfile wind.nc
+    echo 'extract and append first timestep of next month for full coverage'
+    ncks -O -d time,0,0 $ufile_next wind_next.nc
+    ncks -A -d time,0,0 $vfile_next wind_next.nc
+    ncrcat -O wind.nc wind_next.nc wind.nc
+    echo 'convert time from float to double to avoid float32 precision drift'
+    ncap2 -O -s 'time=round(double(time)*24.0)/24.0' wind.nc wind.nc
+    echo 'fix time units format for ww3_prnc U2D parser (needs hh:mm:ss)'
+    ncatted -O -a units,time,o,c,"days since 1993-01-01 00:00:00" wind.nc
+    echo 'add _FillValue attribute required by ww3_prnc'
+    ncatted -O -a _FillValue,U10M,c,f,9999.0 -a _FillValue,V10M,c,f,9999.0 wind.nc
+    echo 'add calendar attribute to suppress ww3_prnc warning'
+    ncatted -O -a calendar,time,c,c,"standard" wind.nc
+    echo 'run ww3_prnc for wind'
+    $CP ww3_prnc_wind.nml ww3_prnc.nml
+    ./ww3_prnc | tee ww3_prnc_wind_$MONTH_NOW.out
+
+    # ----- CURRENT FORCING -----
+    # copy the pre-made current file from CROCO preprocessing
+    echo 'copy current forcing file'
+    $CP $CROCO_WW3_DIR/croco_avg_surf_${MONTH_NOW_CROCO}_current.nc current.nc
+    # append first timestep of next month for full temporal coverage
+    ncks -O -d time,0,0 $CROCO_WW3_DIR/croco_avg_surf_${MONTH_NEXT_CROCO}_current.nc current_next.nc
+    ncrcat -O current.nc current_next.nc current.nc
+    rm -f current_next.nc
+    echo 'run ww3_prnc for currents'
+    $CP ww3_prnc_current.nml ww3_prnc.nml
+    ./ww3_prnc | tee ww3_prnc_current_$MONTH_NOW.out
+
+    # ----- WATER LEVEL FORCING -----
+    # copy the pre-made level file from CROCO preprocessing
+    echo 'copy water level forcing file'
+    $CP $CROCO_WW3_DIR/croco_avg_surf_${MONTH_NOW_CROCO}_level.nc level.nc
+    # append first timestep of next month for full temporal coverage
+    ncks -O -d time,0,0 $CROCO_WW3_DIR/croco_avg_surf_${MONTH_NEXT_CROCO}_level.nc level_next.nc
+    ncrcat -O level.nc level_next.nc level.nc
+    rm -f level_next.nc
+    echo 'run ww3_prnc for water levels'
+    $CP ww3_prnc_level.nml ww3_prnc.nml
+    ./ww3_prnc | tee ww3_prnc_level_$MONTH_NOW.out
+
+    # run the model
+    YMD_FIRSTDAY=$(date -d "$CURRENT_DATE" +%Y%m%d)
+    YMD_NEXT_FIRSTDAY=$(date -d "$CURRENT_DATE +1 month" +%Y%m%d)
+    YMD_LASTDAY=$(date -d "$CURRENT_DATE +1 month -1 day" +%Y%m%d)
+
+    sed -e 's/YMD_FIRSTDAY/'$YMD_FIRSTDAY'/g' -e 's/YMD_NEXT_FIRSTDAY/'$YMD_NEXT_FIRSTDAY'/g' -e 's/YMD_LASTDAY/'$YMD_LASTDAY'/g' < ww3_shel_template.nml > ww3_shel.nml
+    mpirun -np $MPI_NUM_PROCS ./ww3_shel >& ww3_shel_$MONTH_NOW.out
+
+    # create netcdf from the ww3 binary files
+    sed -e 's/YMD_FIRSTDAY/'$YMD_FIRSTDAY'/g' < ww3_ounf_template.nml > ww3_ounf.nml
+    ./ww3_ounf | tee ww3_ounf_$MONTH_NOW.out
+
+    # move the output
+    $MV ww3.$(date -d "$CURRENT_DATE" +%Y%m).nc ../output
+    $MV restart001.ww3 restart.ww3
+    $CP restart.ww3 ../output/restart.$(date -d "$CURRENT_DATE" +%Y%m).ww3
+
+    # Advance by one month
+    CURRENT_DATE=$(date -d "$CURRENT_DATE +1 month" +%Y-%m-01)
+done

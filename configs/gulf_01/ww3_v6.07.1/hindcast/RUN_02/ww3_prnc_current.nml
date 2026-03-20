@@ -1,0 +1,31 @@
+! -------------------------------------------------------------------- !
+! WAVEWATCH III ww3_prnc.nml - Field preprocessor                      !
+! -------------------------------------------------------------------- !
+
+! -------------------------------------------------------------------- !
+! Define the forcing fields to preprocess via FORCING_NML namelist
+!
+! * only one FORCING%FIELD can be set at true
+! * only one FORCING%grid can be set at true
+!
+! * namelist must be terminated with /
+! -------------------------------------------------------------------- !
+&FORCING_NML
+  FORCING%FIELD%CURRENTS   = T
+  FORCING%GRID%ASIS        = T
+/
+
+! -------------------------------------------------------------------- !
+! Define the content of the input file via FILE_NML namelist
+!
+! * namelist must be terminated with /
+! -------------------------------------------------------------------- !
+&FILE_NML
+  FILE%FILENAME      = 'current.nc'
+  FILE%VAR(1)        = 'ucur'
+  FILE%VAR(2)        = 'vcur'
+/
+
+! -------------------------------------------------------------------- !
+! WAVEWATCH III - end of namelist                                      !
+! -------------------------------------------------------------------- !
