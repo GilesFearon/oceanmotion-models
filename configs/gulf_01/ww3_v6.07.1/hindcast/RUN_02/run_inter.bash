@@ -103,13 +103,18 @@ while [ "$(date -d "$CURRENT_DATE" +%Y%m)" -le "$(date -d "$END_DATE" +%Y%m)" ];
     ./ww3_prnc | tee ww3_prnc_wind_$MONTH_NOW.out
 
     # ----- CURRENT FORCING -----
+    # CROCO WW3 files use zero-padded month format (Y2016M01)
+    MONTH_NOW_WW3=$(date -d "$CURRENT_DATE" +Y%YM%m)
+    MONTH_NEXT_WW3=$(date -d "$CURRENT_DATE +1 month" +Y%YM%m)
+    MONTH_PREV_WW3=$(date -d "$CURRENT_DATE -1 month" +Y%YM%m)
     # copy the pre-made current file from CROCO preprocessing
     echo 'copy current forcing file'
-    $CP $CROCO_WW3_DIR/croco_avg_surf_${MONTH_NOW_CROCO}_current.nc current.nc
-    # append first timestep of next month for full temporal coverage
-    ncks -O -d time,0,0 $CROCO_WW3_DIR/croco_avg_surf_${MONTH_NEXT_CROCO}_current.nc current_next.nc
-    ncrcat -O current.nc current_next.nc current.nc
-    rm -f current_next.nc
+    $CP $CROCO_WW3_DIR/croco_avg_surf_${MONTH_NOW_WW3}_current.nc current.nc
+    # prepend last timestep of previous month and append first timestep of next month for full temporal coverage
+    ncks -O -d time,-1 $CROCO_WW3_DIR/croco_avg_surf_${MONTH_PREV_WW3}_current.nc current_prev.nc
+    ncks -O -d time,0,0 $CROCO_WW3_DIR/croco_avg_surf_${MONTH_NEXT_WW3}_current.nc current_next.nc
+    ncrcat -O current_prev.nc current.nc current_next.nc current.nc
+    rm -f current_prev.nc current_next.nc
     echo 'run ww3_prnc for currents'
     $CP ww3_prnc_current.nml ww3_prnc.nml
     ./ww3_prnc | tee ww3_prnc_current_$MONTH_NOW.out
@@ -117,11 +122,12 @@ while [ "$(date -d "$CURRENT_DATE" +%Y%m)" -le "$(date -d "$END_DATE" +%Y%m)" ];
     # ----- WATER LEVEL FORCING -----
     # copy the pre-made level file from CROCO preprocessing
     echo 'copy water level forcing file'
-    $CP $CROCO_WW3_DIR/croco_avg_surf_${MONTH_NOW_CROCO}_level.nc level.nc
-    # append first timestep of next month for full temporal coverage
-    ncks -O -d time,0,0 $CROCO_WW3_DIR/croco_avg_surf_${MONTH_NEXT_CROCO}_level.nc level_next.nc
-    ncrcat -O level.nc level_next.nc level.nc
-    rm -f level_next.nc
+    $CP $CROCO_WW3_DIR/croco_avg_surf_${MONTH_NOW_WW3}_level.nc level.nc
+    # prepend last timestep of previous month and append first timestep of next month for full temporal coverage
+    ncks -O -d time,-1 $CROCO_WW3_DIR/croco_avg_surf_${MONTH_PREV_WW3}_level.nc level_prev.nc
+    ncks -O -d time,0,0 $CROCO_WW3_DIR/croco_avg_surf_${MONTH_NEXT_WW3}_level.nc level_next.nc
+    ncrcat -O level_prev.nc level.nc level_next.nc level.nc
+    rm -f level_prev.nc level_next.nc
     echo 'run ww3_prnc for water levels'
     $CP ww3_prnc_level.nml ww3_prnc.nml
     ./ww3_prnc | tee ww3_prnc_level_$MONTH_NOW.out

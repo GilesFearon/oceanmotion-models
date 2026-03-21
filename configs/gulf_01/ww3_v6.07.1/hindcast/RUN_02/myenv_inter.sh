@@ -23,4 +23,4 @@ MONTH_START="2016-01"
 MONTH_END="2016-12"
 
 # restart from previous run?
-RSTFLAG=0
+RSTFLAG=1
