@@ -1,0 +1,20 @@
+! -------------------------------------------------------------------- !
+! WAVEWATCH III ww3_prnc.nml - Wind field preprocessor (GFS forecast)  !
+! -------------------------------------------------------------------- !
+
+&FORCING_NML
+  FORCING%FIELD%WINDS          = T
+  FORCING%GRID%LATLON          = T
+/
+
+&FILE_NML
+  FILE%FILENAME      = 'wind.nc'
+  FILE%LONGITUDE     = 'lon'
+  FILE%LATITUDE      = 'lat'
+  FILE%VAR(1)        = 'U-component_of_wind'
+  FILE%VAR(2)        = 'V-component_of_wind'
+/
+
+! -------------------------------------------------------------------- !
+! WAVEWATCH III - end of namelist                                      !
+! -------------------------------------------------------------------- !

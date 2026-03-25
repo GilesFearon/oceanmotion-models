@@ -1,0 +1,32 @@
+! -------------------------------------------------------------------- !
+! WAVEWATCH III ww3_shel.nml - single-grid model (forecast)            !
+! -------------------------------------------------------------------- !
+
+&DOMAIN_NML
+  DOMAIN%START   = 'YMDHMS_START'
+  DOMAIN%STOP    = 'YMDHMS_STOP'
+/
+
+&INPUT_NML
+  INPUT%FORCING%WATER_LEVELS = 'T'
+  INPUT%FORCING%CURRENTS     = 'T'
+  INPUT%FORCING%WINDS        = 'T'
+/
+
+&OUTPUT_TYPE_NML
+  TYPE%FIELD%LIST          = 'HS FP DIR DP CHA UST DPT CUR WND WLV'
+/
+
+&OUTPUT_DATE_NML
+  DATE%FIELD          = 'YMDHMS_START' '3600' 'YMDHMS_LASTFIELD'
+  DATE%RESTART        = 'YMDHMS_START' '21600' 'YMDHMS_STOP'
+/
+
+&HOMOG_COUNT_NML
+/
+
+&HOMOG_INPUT_NML
+/
+! -------------------------------------------------------------------- !
+! WAVEWATCH III - end of namelist                                      !
+! -------------------------------------------------------------------- !

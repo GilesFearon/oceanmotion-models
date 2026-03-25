@@ -31,9 +31,21 @@ OGCM="${OGCM:-MERCATOR}"
 BLK="${BLK:-GFS}"
 TIDE_FRC="${TIDE_FRC:-TPXO10}"
 
+# --- CROCO source and MPI ---
+CROCO_SOURCE="${CROCO_SOURCE:-/home/$USER/code/croco-v1.3.1/OCEAN/}"
+CROCO_MPI_NUM_X="${CROCO_MPI_NUM_X:-5}"
+CROCO_MPI_NUM_Y="${CROCO_MPI_NUM_Y:-3}"
+CROCO_MPI_NUM_PROCS=$(( CROCO_MPI_NUM_X * CROCO_MPI_NUM_Y ))
+
+# --- WW3 model identifiers ---
+WW3_MODEL="${WW3_MODEL:-ww3_v6.07.1}"
+WW3_EXE_DIR="${WW3_EXE_DIR:-/home/$USER/code/WW3/model/exe_Ifremer1}"
+WW3_MPI_NUM_PROCS="${WW3_MPI_NUM_PROCS:-12}"
+
 # --- Docker images ---
 DOWNLOAD_IMAGE="${DOWNLOAD_IMAGE:-ghcr.io/saeon/somisana-download_main:latest}"
 CLI_IMAGE="${CLI_IMAGE:-ghcr.io/saeon/somisana-croco_cli_main:latest}"
+WW3_CLI_IMAGE="${WW3_CLI_IMAGE:-ghcr.io/saeon/somisana-ww3_cli_main:latest}"
 
 # --- CMEMS credentials (required for download only) ---
 # COPERNICUS_USERNAME and COPERNICUS_PASSWORD should be set via .env or env vars
@@ -42,7 +54,11 @@ CLI_IMAGE="${CLI_IMAGE:-ghcr.io/saeon/somisana-croco_cli_main:latest}"
 REPO_DIR="${REPO_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
 CONFIG_DIR="${CONFIG_DIR:-${REPO_DIR}/configs/${DOMAIN}/${MODEL}/forecast}"
 TPXO_DATA_DIR="${TPXO_DATA_DIR:-/home/gfearon/code/somisana-croco/DATASETS_CROCOTOOLS/TPXO10}"
-DOWNLOAD_DIR="${DOWNLOAD_DIR:-${REPO_DIR}/data/downloads/${RUN_DATE}}"
+DOWNLOAD_DIR="${DOWNLOAD_DIR:-${REPO_DIR}/data/downloads/${RUN_DATE}/${DOMAIN}}"
 DOMAIN_DOWNLOAD="${DOMAIN_DOWNLOAD:-45,60,21,33}"
 OPS_DIR="${OPS_DIR:-${REPO_DIR}/data/croco_ops/${RUN_DATE}/${DOMAIN}/${MODEL}}"
 RUN_NAME="${RUN_NAME:-${COMP}_${INP}_${OGCM}_${TIDE_FRC}}"
+
+# --- WW3 derived paths ---
+WW3_CONFIG_DIR="${WW3_CONFIG_DIR:-${REPO_DIR}/configs/${DOMAIN}/${WW3_MODEL}/forecast}"
+WW3_OPS_DIR="${WW3_OPS_DIR:-${REPO_DIR}/data/ww3_ops/${RUN_DATE}/${DOMAIN}/${WW3_MODEL}}"

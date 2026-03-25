@@ -1,0 +1,36 @@
+! -------------------------------------------------------------------- !
+! WAVEWATCH III ww3_prnc.nml - Field preprocessor                      !
+! -------------------------------------------------------------------- !
+
+! -------------------------------------------------------------------- !
+! Define the forcing fields to preprocess via FORCING_NML namelist
+!
+! * only one FORCING%FIELD can be set at true
+! * only one FORCING%grid can be set at true
+!
+! * namelist must be terminated with /
+! -------------------------------------------------------------------- !
+&FORCING_NML
+  FORCING%FIELD%WATER_LEVELS = T
+  FORCING%GRID%ASIS          = T
+/
+
+! -------------------------------------------------------------------- !
+! Define the content of the input file via FILE_NML namelist
+!
+! * namelist must be terminated with /
+! -------------------------------------------------------------------- !
+&FILE_NML
+  FILE%FILENAME      = 'level.nc'
+  ! LONGITUDE/LATITUDE are used by ww3_prnc only to identify the netCDF
+  ! dimension names (not actual lon/lat variables). In ASIS mode, coordinate
+  ! variables are never read — only the dimension sizes matter.
+  ! See ww3_prnc.ftn lines ~738-744 and ~757.
+  FILE%LONGITUDE     = 'nx'
+  FILE%LATITUDE      = 'ny'
+  FILE%VAR(1)        = 'wlv'
+/
+
+! -------------------------------------------------------------------- !
+! WAVEWATCH III - end of namelist                                      !
+! -------------------------------------------------------------------- !
