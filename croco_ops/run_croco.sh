@@ -85,12 +85,11 @@ echo "  NUMHISSURF=${NUMHISSURF}, NUMAVGSURF=${NUMAVGSURF}"
 echo "  NUMRST=${NUMRST}, RST_STEP=${RST_STEP}"
 
 # --- e) Run CROCO ---
-source "${CONFIG_DIR}/myenv_frcst.sh"
 cd "${SCRATCH_DIR}"
 
-echo "Running CROCO with ${MPI_NUM_PROCS} processes..."
+echo "Running CROCO with ${CROCO_MPI_NUM_PROCS} processes..."
 date
-mpirun -np ${MPI_NUM_PROCS} ./croco croco.in > croco.out
+mpirun -np ${CROCO_MPI_NUM_PROCS} ./croco croco.in > croco.out
 date
 
 # Test if the run finished properly

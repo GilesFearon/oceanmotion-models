@@ -28,11 +28,12 @@ fi
 # for a forecast run, the compile option name is set in the workflow, and so is passed as command line inputs here
 EXENAME=$1 # e.g. C01
 
-source myenv_frcst.sh
-
 RUNDIR=`pwd`/$EXENAME
 cd $RUNDIR
 SCRDIR=$RUNDIR/Compile
+SOURCE="${CROCO_SOURCE}"
+MPI_NUM_X="${CROCO_MPI_NUM_X}"
+MPI_NUM_Y="${CROCO_MPI_NUM_Y}"
 ROOT_DIR=$SOURCE/..
 
 sed -e 's/MPI_NUM_X/'$MPI_NUM_X'/' -e 's/MPI_NUM_Y/'$MPI_NUM_Y'/' < ${RUNDIR}/param_.h > ${RUNDIR}/param.h
