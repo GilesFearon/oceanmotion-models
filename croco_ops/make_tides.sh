@@ -1,5 +1,5 @@
 #!/bin/bash
-# Generate tidal forcing file using the somisana-croco CLI Docker image.
+# Generate tidal forcing file using the somisana-croco CLI.
 set -e
 source "$(dirname "$0")/../my_env.sh"
 
@@ -13,17 +13,11 @@ echo "  CONFIG:    ${CONFIG_DIR}"
 echo "  OUTPUT:    ${OPS_DIR}/${TIDE_FRC}"
 echo "==================="
 
-docker run --rm \
-  -v "${CONFIG_DIR}":/config \
-  -v "${TPXO_DATA_DIR}":/data/TPXO10 \
-  -v "${OPS_DIR}/${TIDE_FRC}":/output \
-  ${CLI_IMAGE} make_tides_fcst \
-    --input_dir /data/TPXO10/ \
-    --output_dir /output \
+conda run -n ${CROCO_ENV} python "${CROCO_REPO}/cli.py" make_tides_fcst \
+    --input_dir "${TPXO_DATA_DIR}" \
+    --output_dir "${OPS_DIR}/${TIDE_FRC}" \
     --run_date "${RUN_DATE_FMT}" \
     --hdays ${HDAYS} \
     --Yorig ${YORIG}
-
-sudo chown -R $(id -u):$(id -g) "${OPS_DIR}/${TIDE_FRC}"
 
 echo "Done. Tidal forcing saved to ${OPS_DIR}/${TIDE_FRC}"

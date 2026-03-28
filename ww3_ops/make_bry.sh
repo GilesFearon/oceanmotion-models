@@ -12,15 +12,11 @@ echo "  INPUT:       ${DOWNLOAD_DIR}/CMEMS_WAV/CMEMS_WAV_${RUN_DATE}.nc"
 echo "  OUTPUT_DIR:  ${OUTPUT_DIR}"
 echo "======================================"
 
-docker run --user $(id -u):$(id -g) --rm \
-  -v "${DOWNLOAD_DIR}/CMEMS_WAV":/data/cmems \
-  -v "${WW3_CONFIG_DIR}/GRID":/data/grid \
-  -v "${OUTPUT_DIR}":/output \
-  ${WW3_CLI_IMAGE} make_bry_cmems_fcst \
-    --input_file /data/cmems/CMEMS_WAV_${RUN_DATE}.nc \
-    --lon_file /data/grid/lon.dat \
-    --lat_file /data/grid/lat.dat \
-    --mask_file /data/grid/mask.dat \
-    --output_dir /output
+conda run -n ${WW3_ENV} python "${WW3_REPO}/cli.py" make_bry_cmems_fcst \
+    --input_file "${DOWNLOAD_DIR}/CMEMS_WAV/CMEMS_WAV_${RUN_DATE}.nc" \
+    --lon_file "${WW3_CONFIG_DIR}/GRID/lon.dat" \
+    --lat_file "${WW3_CONFIG_DIR}/GRID/lat.dat" \
+    --mask_file "${WW3_CONFIG_DIR}/GRID/mask.dat" \
+    --output_dir "${OUTPUT_DIR}"
 
 echo "Done. Boundary spec files saved to ${OUTPUT_DIR}"

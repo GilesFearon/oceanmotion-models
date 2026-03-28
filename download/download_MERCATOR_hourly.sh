@@ -20,9 +20,7 @@ echo "  OUT_DIR:  ${DOWNLOAD_DIR}/MERCATOR_hourly"
 echo "============================================="
 
 echo "Downloading CMEMS MERCATOR hourly data for ${RUN_DATE}..."
-docker run --user $(id -u):$(id -g) --rm \
-  -v "${DOWNLOAD_DIR}/MERCATOR_hourly":/tmp \
-  ${DOWNLOAD_IMAGE} download_cmems_ops \
+conda run -n ${DOWNLOAD_ENV} python "${DOWNLOAD_REPO}/cli.py" download_cmems_ops \
     --usrname ${COPERNICUS_USERNAME} \
     --passwd ${COPERNICUS_PASSWORD} \
     --dataset cmems_mod_glo_phy_anfc_0.083deg_PT1H-m \
@@ -31,7 +29,7 @@ docker run --user $(id -u):$(id -g) --rm \
     --depths 0,0.5 \
     --run_date "${RUN_DATE_FMT}" \
     --hdays ${HDAYS} --fdays ${FDAYS} \
-    --outputDir '/tmp' \
+    --outputDir "${DOWNLOAD_DIR}/MERCATOR_hourly" \
     --outputFile "MERCATOR_hourly_${RUN_DATE}.nc"
 
 echo "Done. CMEMS MERCATOR hourly data saved to ${DOWNLOAD_DIR}/MERCATOR_hourly"

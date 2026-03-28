@@ -21,14 +21,10 @@ if [ ! -f "${CROCO_OUTPUT}/croco_avg_surf.nc" ]; then
   exit 1
 fi
 
-docker run --user $(id -u):$(id -g) --rm \
-  -v "${CROCO_OUTPUT}":/data/croco \
-  -v "${CONFIG_DIR}/GRID":/data/grid \
-  -v "${WW3_FORCING_DIR}":/output \
-  ${CLI_IMAGE} croco_srf_2_ww3 \
-    --fname /data/croco/croco_avg_surf.nc \
-    --grdname /data/grid/croco_grd.nc \
-    --dir_out /output \
+conda run -n ${CROCO_ENV} python "${CROCO_REPO}/cli.py" croco_srf_2_ww3 \
+    --fname "${CROCO_OUTPUT}/croco_avg_surf.nc" \
+    --grdname "${CONFIG_DIR}/GRID/croco_grd.nc" \
+    --dir_out "${WW3_FORCING_DIR}" \
     --Yorig ${YORIG}
 
 echo "Done. WW3 forcing files saved to ${WW3_FORCING_DIR}"

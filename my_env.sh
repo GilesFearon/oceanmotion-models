@@ -42,10 +42,13 @@ WW3_MODEL="${WW3_MODEL:-ww3_v6.07.1}"
 WW3_EXE_DIR="${WW3_EXE_DIR:-/home/$USER/code/WW3/model/exe_Ifremer1}"
 WW3_MPI_NUM_PROCS="${WW3_MPI_NUM_PROCS:-12}"
 
-# --- Docker images ---
-DOWNLOAD_IMAGE="${DOWNLOAD_IMAGE:-ghcr.io/saeon/somisana-download_main:latest}"
-CLI_IMAGE="${CLI_IMAGE:-ghcr.io/saeon/somisana-croco_cli_main:latest}"
-WW3_CLI_IMAGE="${WW3_CLI_IMAGE:-ghcr.io/saeon/somisana-ww3_cli_main:latest}"
+# --- CLI repo paths and conda environments ---
+DOWNLOAD_REPO="${DOWNLOAD_REPO:-/home/${USER}/code/somisana-download}"
+CROCO_REPO="${CROCO_REPO:-/home/${USER}/code/somisana-croco}"
+WW3_REPO="${WW3_REPO:-/home/${USER}/code/somisana-ww3}"
+DOWNLOAD_ENV="${DOWNLOAD_ENV:-download}"
+CROCO_ENV="${CROCO_ENV:-somisana_croco}"
+WW3_ENV="${WW3_ENV:-wavespectra}"
 
 # --- CMEMS credentials (required for download only) ---
 # COPERNICUS_USERNAME and COPERNICUS_PASSWORD should be set via .env or env vars
@@ -53,11 +56,16 @@ WW3_CLI_IMAGE="${WW3_CLI_IMAGE:-ghcr.io/saeon/somisana-ww3_cli_main:latest}"
 # --- Derived paths (also overridable) ---
 REPO_DIR="${REPO_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
 CONFIG_DIR="${CONFIG_DIR:-${REPO_DIR}/configs/${DOMAIN}/${MODEL}/forecast}"
-TPXO_DATA_DIR="${TPXO_DATA_DIR:-/home/gfearon/code/somisana-croco/DATASETS_CROCOTOOLS/TPXO10}"
+TPXO_DATA_DIR="${TPXO_DATA_DIR:-/home/gfearon/code/somisana-croco/DATASETS_CROCOTOOLS/TPXO10}/"
 DOWNLOAD_DIR="${DOWNLOAD_DIR:-${REPO_DIR}/data/downloads/${RUN_DATE}/${DOMAIN}}"
 DOMAIN_DOWNLOAD="${DOMAIN_DOWNLOAD:-45,60,21,33}"
 OPS_DIR="${OPS_DIR:-${REPO_DIR}/data/croco_ops/${RUN_DATE}/${DOMAIN}/${MODEL}}"
 RUN_NAME="${RUN_NAME:-${COMP}_${INP}_${OGCM}_${TIDE_FRC}}"
+
+# --- Postprocessing paths ---
+OBS_COEF_DIR="${OBS_COEF_DIR:-/home/${USER}/projects/gulf/data/water_level_obs/from_Chris_2024-03-30/postprocess}"
+TIDAL_ANALYSIS_DIR="${TIDAL_ANALYSIS_DIR:-${REPO_DIR}/configs/${DOMAIN}/${MODEL}/hindcast/tidal_analysis}"
+MERCATOR_ANALYSIS_DIR="${MERCATOR_ANALYSIS_DIR:-/home/${USER}/projects/ocean-motion/data/MERCATOR/gulf_ssh}"
 
 # --- WW3 derived paths ---
 WW3_CONFIG_DIR="${WW3_CONFIG_DIR:-${REPO_DIR}/configs/${DOMAIN}/${WW3_MODEL}/forecast}"

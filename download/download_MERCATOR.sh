@@ -20,14 +20,12 @@ echo "  OUT_DIR:  ${DOWNLOAD_DIR}/MERCATOR"
 echo "=========================="
 
 echo "Downloading MERCATOR for ${RUN_DATE}..."
-docker run --user $(id -u):$(id -g) --rm \
-  -v "${DOWNLOAD_DIR}/MERCATOR":/tmp \
-  ${DOWNLOAD_IMAGE} download_mercator_ops \
+conda run -n ${DOWNLOAD_ENV} python "${DOWNLOAD_REPO}/cli.py" download_mercator_ops \
     --usrname ${COPERNICUS_USERNAME} \
     --passwd ${COPERNICUS_PASSWORD} \
     --domain ${DOMAIN_DOWNLOAD} \
     --run_date "${RUN_DATE_FMT}" \
     --hdays ${HDAYS} --fdays ${FDAYS} \
-    --outputDir '/tmp'
+    --outputDir "${DOWNLOAD_DIR}/MERCATOR"
 
 echo "Done. MERCATOR data saved to ${DOWNLOAD_DIR}/MERCATOR"

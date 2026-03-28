@@ -1,5 +1,5 @@
 #!/bin/bash
-# Generate initial and boundary condition files using the somisana-croco CLI Docker image.
+# Generate initial and boundary condition files using the somisana-croco CLI.
 set -e
 source "$(dirname "$0")/../my_env.sh"
 
@@ -16,31 +16,21 @@ echo "========================"
 
 # --- Step 1: Initial conditions ---
 echo "Making initial conditions..."
-docker run --rm \
-  -v "${CONFIG_DIR}":/config \
-  -v "${DOWNLOAD_DIR}/${OGCM}":/data/ogcm \
-  -v "${OPS_DIR}/${OGCM}":/output \
-  ${CLI_IMAGE} make_ini_fcst \
-    --input_file /data/ogcm/${OGCM}_${RUN_DATE}.nc \
-    --output_dir /output \
+conda run -n ${CROCO_ENV} python "${CROCO_REPO}/cli.py" make_ini_fcst \
+    --input_file "${DOWNLOAD_DIR}/${OGCM}/${OGCM}_${RUN_DATE}.nc" \
+    --output_dir "${OPS_DIR}/${OGCM}" \
     --run_date "${RUN_DATE_FMT}" \
     --hdays ${HDAYS} \
     --Yorig ${YORIG}
 
 # --- Step 2: Boundary conditions ---
 echo "Making boundary conditions..."
-docker run --rm \
-  -v "${CONFIG_DIR}":/config \
-  -v "${DOWNLOAD_DIR}/${OGCM}":/data/ogcm \
-  -v "${OPS_DIR}/${OGCM}":/output \
-  ${CLI_IMAGE} make_bry_fcst \
-    --input_file /data/ogcm/${OGCM}_${RUN_DATE}.nc \
-    --output_dir /output \
+conda run -n ${CROCO_ENV} python "${CROCO_REPO}/cli.py" make_bry_fcst \
+    --input_file "${DOWNLOAD_DIR}/${OGCM}/${OGCM}_${RUN_DATE}.nc" \
+    --output_dir "${OPS_DIR}/${OGCM}" \
     --run_date "${RUN_DATE_FMT}" \
     --hdays ${HDAYS} \
     --fdays ${FDAYS} \
     --Yorig ${YORIG}
-
-sudo chown -R $(id -u):$(id -g) "${OPS_DIR}/${OGCM}"
 
 echo "Done. INI + BRY saved to ${OPS_DIR}/${OGCM}"
