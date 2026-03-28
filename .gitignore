@@ -12,7 +12,9 @@ spec.list
 *.out
 **/scratch
 **/output
-*post*
+*post*/
+
+!*_ops/postprocess*
 
 *.swp
 *.stdout
