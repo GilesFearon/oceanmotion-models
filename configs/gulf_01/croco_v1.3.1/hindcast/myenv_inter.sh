@@ -30,4 +30,4 @@ TIDE_FILES=1
 export TIDE_FRC=TPXO10
 #
 # runtime input
-export INNAME=I01
+export INNAME=I02

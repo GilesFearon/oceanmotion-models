@@ -25,10 +25,10 @@ climatology: filename
 boundary: filename
                           croco_bry.nc
 initial: NRREC / filename
-         RST_STEP 
+         1 
                           croco_ini.nc
 restart:          NRST, NRPFRST / filename
-                  NUMRST   0
+                  NUMTIMES   -1
                           croco_rst.nc
 history: LDEFHIS, NWRT, NRPFHIS / filename 
             F     NUMTIMES     0
@@ -76,7 +76,7 @@ sponge:          X_SPONGE [m]
                    XXX
 
 nudg_cof:    TauT_in, TauT_out, TauM_in, TauM_out  [days for all]
-                1.       360.      1.      360.
+                1.       360.      1      360.
 
 diagnostics:   ldefdia   nwrtdia    nrpfdia /filename
                   T        NUMHIS         0
@@ -262,9 +262,9 @@ psource:   Nsrc  Isrc  Jsrc  Dsrc  Qbar [m3/s]    Lsrc        Tsrc
 psource_ncfile:   Nsrc  Isrc  Jsrc  Dsrc qbardir  Lsrc  Tsrc   runoff file name
                                   croco_runoff.nc
                  2
-                         24  35  0  -1   T T   20.0  15.0
-                         35  13  1  -1   T T   20.0  15.0
+                         24  35  1  -1   T T   20.0  0.0
+                         35  13  1  -1   T T   20.0  0.0
 
 online:    byear  bmonth recordsperday byearend bmonthend / data path
-           9999   1      24            9999     1
-           DATA_DIR           
+           NYONLINE   NMONLINE     24     2025     6
+          /home/gfearon/code/somisana-croco/DATASETS_CROCOTOOLS/ERA5/gulf_for_croco/

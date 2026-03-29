@@ -14,7 +14,7 @@ DTFAST=60
 # Output frequency (in hours)
 #
 # full domain output
-NH_AVG=6
+NH_AVG=1
 NH_HIS=24 # not actually used as we set the history file output to NUMTIMES not NUMHIS
 # surface output
 NH_AVGSURF=1

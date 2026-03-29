@@ -40,7 +40,7 @@ CROCO_MPI_NUM_PROCS=$(( CROCO_MPI_NUM_X * CROCO_MPI_NUM_Y ))
 # --- WW3 model identifiers ---
 WW3_MODEL="${WW3_MODEL:-ww3_v6.07.1}"
 WW3_EXE_DIR="${WW3_EXE_DIR:-/home/$USER/code/WW3/model/exe_Ifremer1}"
-WW3_MPI_NUM_PROCS="${WW3_MPI_NUM_PROCS:-12}"
+WW3_MPI_NUM_PROCS="${WW3_MPI_NUM_PROCS:-16}"
 
 # --- CLI repo paths and conda environments ---
 DOWNLOAD_REPO="${DOWNLOAD_REPO:-/home/${USER}/code/somisana-download}"
