@@ -13,14 +13,21 @@ export RUN_DIR=$CONFIG_DIR/RUN_02
 export GRID_DIR=$CONFIG_DIR/GRID/
 export BRY_DIR=$CONFIG_DIR/SPEC_CMEMS/
 export SRF_DIR=/home/gfearon/lustre/DATA/ERA5/gulf_for_croco
-export CROCO_WW3_DIR=/home/gfearon/lustre/oceanmotion-models/configs/gulf_01/croco_v1.3.1/hindcast/C04_I01_GLORYS_ERA5/output/for_ww3
+export CROCO_WW3_DIR=/home/gfearon/lustre/oceanmotion-models/configs/gulf_01/croco_v1.3.1/hindcast/C04_I02_GLORYS_ERA5/output/for_ww3
 
 # MPI settings
 export MPI_NUM_PROCS=24
 
 # time period for interannual run
-MONTH_START="2016-01"
-MONTH_END="2016-12"
+#MONTH_START="2016-01"
+#MONTH_END="2016-12"
 
 # restart from previous run?
-RSTFLAG=1
+#RSTFLAG=1
+
+# time period for interannual run
+MONTH_START="2021-12"
+MONTH_END="2022-1"
+
+# restart from previous run?
+RSTFLAG=0

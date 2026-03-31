@@ -31,10 +31,10 @@ T_REF=3
 NLEVEL=1
 #
 # these are the time extents for this run
-NY_START=2021
+NY_START=2022
 NY_END=2022
-NM_START=12
-NM_END=2
+NM_START=1
+NM_END=1
 #
 # Set month format at 1 or 2 digits (for input and output files): "%01d" = 1 digit/ "%02d" = 2 digit
 MTH_FORMAT="%02d"

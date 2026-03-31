@@ -54,6 +54,8 @@ END_DATE="${MONTH_END}-01"
 # restart file
 if [[ $RSTFLAG == 0 ]]; then
   echo "initialising from a cold start"
+  # remove the restart file if it exists from a previous run
+  rm restart.ww3
 else
   WW3_RSTFILE=$RUN_DIR/output/restart.$(date -d "$CURRENT_DATE -1 month" +%Y%m).ww3
   echo "initialising from restart file: ${WW3_RSTFILE}"
