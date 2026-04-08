@@ -9,23 +9,26 @@ Operational CROCO ocean forecast system for the Gulf domain.
 - **ncdump** (from netCDF) — used by the restart fallback logic
 - **TPXO10 atlas files** — placed in `data/TPXO10/`
 - **CROCO v1.3.1 source code** — path configured in `configs/.../forecast/myenv_frcst.sh`
-- **Copernicus credentials** — set `COPERNICUS_USERNAME` and `COPERNICUS_PASSWORD` in `.env`
+- **Copernicus credentials** — set `COPERNICUS_USERNAME` and `COPERNICUS_PASSWORD` in `ops/.env`
 
 ## Repository structure
 
 ```
-my_env.sh                          # Shared configuration (sourced by all scripts)
-.env                               # Credentials (not committed)
-
-download/
-  download_GFS.sh                  # Download GFS atm forcing + reformat for CROCO
-  download_MERCATOR.sh             # Download MERCATOR ocean data
-
-croco_ops/
-  make_tides.sh                    # Generate tidal forcing (TPXO10)
-  make_bry_ini.sh                  # Generate boundary + initial conditions (MERCATOR)
-  compile.sh                       # Compile CROCO executable
-  run_croco.sh                     # Set up inputs, generate croco.in, run model, archive output
+ops/                               # Operational workflows
+  my_env.sh                        # Shared configuration (sourced by all scripts)
+  .env                             # Credentials (not committed)
+  download/
+    download_GFS.sh                # Download GFS atm forcing + reformat for CROCO
+    download_MERCATOR.sh           # Download MERCATOR ocean data
+  croco_ops/
+    make_tides.sh                  # Generate tidal forcing (TPXO10)
+    make_bry_ini.sh                # Generate boundary + initial conditions (MERCATOR)
+    compile.sh                     # Compile CROCO executable
+    run_croco.sh                   # Set up inputs, generate croco.in, run model, archive output
+  ww3_ops/
+    make_bry.sh                    # Generate WW3 boundary spectra
+    make_croco_forcing.sh          # Generate WW3 forcing from CROCO output
+    run_ww3.sh                     # Run WW3 model
 
 configs/{DOMAIN}/{MODEL}/forecast/
   GRID/croco_grd.nc                # Model grid
@@ -69,7 +72,7 @@ All derived paths (`CONFIG_DIR`, `DOWNLOAD_DIR`, `OPS_DIR`, etc.) are also overr
 ### 1. Set credentials and run date
 
 ```bash
-source .env
+source ops/.env
 export RUN_DATE=20260317_00
 ```
 
@@ -78,8 +81,8 @@ export RUN_DATE=20260317_00
 These can run in parallel:
 
 ```bash
-bash download/download_GFS.sh
-bash download/download_MERCATOR.sh
+bash ops/download/download_GFS.sh
+bash ops/download/download_MERCATOR.sh
 ```
 
 `download_GFS.sh` does two things: downloads raw GFS grib files, then reformats them to CROCO-compatible netCDF (saved to `data/downloads/{RUN_DATE}/GFS/for_croco/`).
@@ -91,8 +94,8 @@ bash download/download_MERCATOR.sh
 These can run in parallel (after downloads complete):
 
 ```bash
-bash croco_ops/make_tides.sh
-bash croco_ops/make_bry_ini.sh
+bash ops/croco_ops/make_tides.sh
+bash ops/croco_ops/make_bry_ini.sh
 ```
 
 `make_tides.sh` generates tidal forcing from TPXO10 atlas data.
@@ -104,13 +107,13 @@ bash croco_ops/make_bry_ini.sh
 Only needed once, or when `cppdefs.h` / `param_.h` change:
 
 ```bash
-bash croco_ops/compile.sh
+bash ops/croco_ops/compile.sh
 ```
 
 ### 5. Run the model
 
 ```bash
-bash croco_ops/run_croco.sh
+bash ops/croco_ops/run_croco.sh
 ```
 
 This script:
@@ -156,13 +159,13 @@ The naming convention allows running different configurations side by side:
 
 ```bash
 # Different domain
-DOMAIN=gulf_02 bash croco_ops/make_tides.sh
+DOMAIN=gulf_02 bash ops/croco_ops/make_tides.sh
 
 # Different forcing sources
-OGCM=HYCOM TIDE_FRC=FES2014 bash croco_ops/run_croco.sh
+OGCM=HYCOM TIDE_FRC=FES2014 bash ops/croco_ops/run_croco.sh
 
 # Different compilation + input options
-COMP=C07 INP=I02 bash croco_ops/run_croco.sh
+COMP=C07 INP=I02 bash ops/croco_ops/run_croco.sh
 ```
 
 Each combination produces a unique output path under `data/croco_ops/`.

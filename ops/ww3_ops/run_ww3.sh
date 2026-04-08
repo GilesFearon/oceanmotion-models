@@ -47,7 +47,7 @@ cp "${WW3_EXE_DIR}/ww3_bounc" .
 BRY_SPEC_DIR="${WW3_OPS_DIR}/SPEC_CMEMS"
 if [ ! -d "${BRY_SPEC_DIR}" ] || [ -z "$(ls ${BRY_SPEC_DIR}/spec.list 2>/dev/null)" ]; then
   echo "Error: Boundary spec files not found in ${BRY_SPEC_DIR}"
-  echo "Run ww3_ops/make_bry.sh first"
+  echo "Run ops/ww3_ops/make_bry.sh first"
   exit 1
 fi
 sed 's|^|'"${BRY_SPEC_DIR}"'/|' "${BRY_SPEC_DIR}/spec.list" > spec.list
@@ -91,7 +91,7 @@ CROCO_WW3_DIR="${WW3_OPS_DIR}/CROCO_WW3"
 CURRENT_FILE=$(ls "${CROCO_WW3_DIR}"/*_current.nc 2>/dev/null | head -1)
 if [ -z "${CURRENT_FILE}" ]; then
   echo "Error: CROCO WW3 current file not found in ${CROCO_WW3_DIR}"
-  echo "Run ww3_ops/make_croco_forcing.sh first"
+  echo "Run ops/ww3_ops/make_croco_forcing.sh first"
   exit 1
 fi
 cp "${CURRENT_FILE}" current.nc
@@ -104,7 +104,7 @@ echo "Preprocessing water level forcing..."
 LEVEL_FILE=$(ls "${CROCO_WW3_DIR}"/*_level.nc 2>/dev/null | head -1)
 if [ -z "${LEVEL_FILE}" ]; then
   echo "Error: CROCO WW3 level file not found in ${CROCO_WW3_DIR}"
-  echo "Run ww3_ops/make_croco_forcing.sh first"
+  echo "Run ops/ww3_ops/make_croco_forcing.sh first"
   exit 1
 fi
 cp "${LEVEL_FILE}" level.nc
@@ -158,10 +158,14 @@ sed -e 's|YMDHMS_START|'"${YMDHMS_START}"'|g' \
 
 # --- k) Archive output ---
 echo "Archiving output..."
-# Move netCDF output (ww3.nc with TIMESPLIT=0 produces a single file)
-for f in ww3.*.nc; do
-  [ -f "$f" ] && mv -f "$f" "${OUTPUT_DIR}/"
-done
+# Move netCDF output (TIMESPLIT=0 produces a single file named ww3.YYYY.nc)
+# Rename to generic ww3_ounf.nc to avoid clashes with other post-processing
+OUNF_FILE="ww3.${RUN_DATE:0:4}.nc"
+if [ ! -f "${OUNF_FILE}" ]; then
+  echo "Error: expected ww3_ounf output ${OUNF_FILE} not found"
+  exit 1
+fi
+mv -f "${OUNF_FILE}" "${OUTPUT_DIR}/ww3_ounf.nc"
 
 # Archive all restart files
 for f in restart*.ww3; do
