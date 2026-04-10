@@ -113,10 +113,14 @@ cp "${WW3_CONFIG_DIR}/ww3_prnc_level.nml" ww3_prnc.nml
 ./ww3_prnc | tee ww3_prnc_level.out
 
 # --- h) Restart fallback logic ---
+# Search back up to FDAYS worth of 6-hour steps. FDAYS is the physical limit:
+# the prev run's restart files only extend FDAYS past prev_date, so a record
+# at RUN_DATE only exists if RUN_DATE - prev_date <= FDAYS (assuming HDAYS=0).
 echo "Searching for restart file..."
 RUN_EPOCH=$(date -u -d "${RUN_FMT}" +%s)
+MAX_RST_STEPS=$(awk "BEGIN {print int(${FDAYS} * 24 / 6)}")
 RST_FOUND=0
-for i in $(seq 1 20); do
+for i in $(seq 1 ${MAX_RST_STEPS}); do
   prev_epoch=$((RUN_EPOCH - i * 6 * 3600))
   prev_date=$(date -u -d "@${prev_epoch}" +"%Y%m%d_%H")
   prev_output="${REPO_DIR}/data/ww3_ops/${prev_date}/${DOMAIN}/${WW3_MODEL}/output"

@@ -17,11 +17,15 @@ echo "==================="
 mkdir -p "${SCRATCH_DIR}" "${OUTPUT_DIR}"
 
 # --- b) Copy ini file (restart fallback logic) ---
-# Search back up to 20 x 6-hour steps for a previous croco_rst.nc
+# Search back up to FDAYS worth of 6-hour steps for a previous croco_rst.nc.
+# FDAYS is the physical limit: the prev run's restart file only extends
+# FDAYS past prev_date, so a record at RUN_DATE only exists if
+# RUN_DATE - prev_date <= FDAYS (assuming HDAYS=0).
+MAX_RST_STEPS=$(awk "BEGIN {print int(${FDAYS} * 24 / 6)}")
 RST_STEP=1
 INI_FILE=""
 RUN_EPOCH=$(date -u -d "${RUN_DATE:0:4}-${RUN_DATE:4:2}-${RUN_DATE:6:2} ${RUN_DATE:9:2}:00:00" +%s)
-for i in $(seq 1 20); do
+for i in $(seq 1 ${MAX_RST_STEPS}); do
   # Calculate previous run date (i * 6 hours back)
   prev_epoch=$((RUN_EPOCH - i * 6 * 3600))
   prev_date=$(date -u -d "@${prev_epoch}" +"%Y%m%d_%H")
