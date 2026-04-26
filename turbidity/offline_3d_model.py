@@ -197,11 +197,19 @@ def zr_to_zw_Hz(z_r):
 # WW3 time interpolation
 # =============================================================================
 
-def interpolate_ww3_to_croco_times(ds_ww3, croco_times):
+def interpolate_ww3_to_croco_times(ds_ww3, croco_times, ubr_scale=1.0):
     """
     Interpolate WW3 fields onto CROCO times.
 
     Returns dict with ubr, t0m1, wave_dir — all (nt, M, L).
+
+    The optional ``ubr_scale`` is a multiplicative factor applied to the WW3
+    bottom orbital velocity components (uubr, vubr) at load time. Scaling both
+    components by the same factor is equivalent to scaling the magnitude
+    ``ubr`` by that factor, but is applied to the variables actually read
+    from the WW3 file. Used by the ensemble launcher to perturb each member
+    by an Hs-error-derived fraction; default 1.0 leaves the deterministic
+    behaviour unchanged.
     """
     ww3_times = ds_ww3['time'].values
     t_ref = min(croco_times[0], ww3_times[0])
@@ -211,8 +219,8 @@ def interpolate_ww3_to_croco_times(ds_ww3, croco_times):
     # Check if times align exactly (skip interpolation if so)
     if len(croco_sec) == len(ww3_sec) and np.allclose(croco_sec, ww3_sec, atol=1.0):
         print("  WW3 and CROCO times align — no interpolation needed")
-        uubr = ds_ww3['uubr'].values
-        vubr = ds_ww3['vubr'].values
+        uubr = ds_ww3['uubr'].values * ubr_scale
+        vubr = ds_ww3['vubr'].values * ubr_scale
         ubr = np.sqrt(uubr**2 + vubr**2)
         t0m1 = ds_ww3['t0m1'].values
         wave_dir = ds_ww3['dir'].values
@@ -228,8 +236,8 @@ def interpolate_ww3_to_croco_times(ds_ww3, croco_times):
         dir_ww3 = ds_ww3['dir'].values
 
         # Replace NaN with 0 for interpolation
-        uubr_ww3 = np.nan_to_num(uubr_ww3, nan=0.0)
-        vubr_ww3 = np.nan_to_num(vubr_ww3, nan=0.0)
+        uubr_ww3 = np.nan_to_num(uubr_ww3, nan=0.0) * ubr_scale
+        vubr_ww3 = np.nan_to_num(vubr_ww3, nan=0.0) * ubr_scale
         t0m1_ww3 = np.nan_to_num(t0m1_ww3, nan=0.0)
 
         ubr_ww3 = np.sqrt(uubr_ww3**2 + vubr_ww3**2)
@@ -467,6 +475,14 @@ def thomas_solve_3d(a, b, c, d, N):
 
 def compute_erosion(tau_max, tau_cr, M_rate, mask):
     """Partheniades erosion for one sediment class, vectorised 2D."""
+    # TODO: the hard 5 N/m^2 cap on tau_max in soulsby_combined_stress_2d
+    # exists because the linear Partheniades excess blows up at very high
+    # stress. A cleaner fix is a smooth saturation of the erosion law here
+    # (e.g. M_rate * tanh(tau/tau_cr - 1)), leaving tau_max uncapped so
+    # diagnostics reflect the true physical stress. In a 7-day ensemble test
+    # the cap was never actually hit (max tau ~4.97 N/m^2, 0 samples at
+    # cap), so this is deferred. Revisit if a known extreme event hindcast
+    # shows clipping.
     excess = np.maximum(tau_max / tau_cr - 1.0, 0.0)
     return M_rate * excess * mask
 
@@ -476,20 +492,31 @@ def compute_erosion(tau_max, tau_cr, M_rate, mask):
 
 def run(croco_file, ww3_file, grd_file, yorig, params=None, out_dir=None,
         out_file_name='turbidity_3d_output.nc',
-        ini_file=None, ini_time_index=-1):
+        ini_file=None, ini_time_index=-1, ini_time=None,
+        restart_interval_hours=0, ubr_scale=1.0):
     """Run the offline 3D sediment transport model.
 
     Parameters
     ----------
     ini_file : str or None
         Optional path to a previous turbidity output file containing a
-        ``C_3d`` variable (dims: time, sed_class, s_rho, eta_rho, xi_rho).
+        ``C_3d`` variable (dims: restart_time, sed_class, s_rho, eta_rho, xi_rho).
         If provided, the 3D concentration field is loaded from it as the
         initial condition. If None, the run starts from zero (background
         ``C_bg`` is added to the output at every step).
     ini_time_index : int
-        Time index within ``ini_file`` to use as the initial state.
+        Time index within ``ini_file`` to use as the initial state
+        (0-based, negative allowed). Ignored if ``ini_time`` is given.
         Default -1 (last snapshot in the file).
+    ini_time : str or None
+        ISO datetime string. If given, the ``restart_time`` array in
+        ``ini_file`` is searched for an exact match (to within 1 minute);
+        the matching 0-based index is used, overriding ``ini_time_index``.
+    restart_interval_hours : int
+        If > 0, ``C_3d`` restart snapshots are written every
+        ``restart_interval_hours`` hours of elapsed model time (measured
+        from ``croco_times[0]``), plus always the final step. If 0 (default),
+        only the final step is saved as a single snapshot.
     """
 
     if params is None:
@@ -527,7 +554,9 @@ def run(croco_file, ww3_file, grd_file, yorig, params=None, out_dir=None,
     # --- Load WW3 and interpolate ---
     print("\nLoading WW3 data...")
     ds_ww3 = xr.open_dataset(ww3_file)
-    ww3 = interpolate_ww3_to_croco_times(ds_ww3, croco_times)
+    if ubr_scale != 1.0:
+        print(f"  Applying ubr_scale = {ubr_scale} to WW3 (uubr, vubr)")
+    ww3 = interpolate_ww3_to_croco_times(ds_ww3, croco_times, ubr_scale=ubr_scale)
     ds_ww3.close()
 
     # --- Initialise concentration ---
@@ -539,6 +568,19 @@ def run(croco_file, ww3_file, grd_file, yorig, params=None, out_dir=None,
         if 'C_3d' not in ds_ini.variables:
             raise ValueError(
                 f"Initial condition file has no 'C_3d' variable: {ini_file}")
+        if ini_time is not None:
+            target = np.datetime64(ini_time)
+            rst_times = ds_ini['restart_time'].values.astype('datetime64[ns]')
+            dts = np.abs(rst_times - target).astype('timedelta64[s]').astype(np.int64)
+            idx = int(np.argmin(dts))
+            if dts[idx] > 60:
+                raise ValueError(
+                    f"No restart_time in {ini_file} matches target {target} "
+                    f"(closest {rst_times[idx]}, {dts[idx]} s away). "
+                    f"Available: {rst_times}")
+            ini_time_index = idx
+            print(f"  matched --ini_time {target} to index {idx} "
+                  f"(0-based) of {len(rst_times)} restart snapshots")
         C_ini = ds_ini['C_3d'].isel(restart_time=ini_time_index).values  # (sed_class, N, M, L)
         if C_ini.shape != C.shape:
             raise ValueError(
@@ -557,6 +599,24 @@ def run(croco_file, ww3_file, grd_file, yorig, params=None, out_dir=None,
     tau_max_all = np.zeros((nt, M, L))
     mass_history = np.zeros(nt)
 
+    # --- Determine indices at which to store C_3d restart snapshots ---
+    # If restart_interval_hours > 0, take every step whose elapsed time
+    # from t0 is a multiple of restart_interval_hours (within 1 minute).
+    # Always include the final step.
+    if restart_interval_hours and restart_interval_hours > 0:
+        elapsed_h = ((croco_times - croco_times[0]) /
+                     np.timedelta64(1, 's')).astype(float) / 3600.0
+        stride = float(restart_interval_hours)
+        near = np.abs(elapsed_h - np.round(elapsed_h / stride) * stride)
+        restart_indices = sorted(set(np.where(near < 1.0/60.0)[0].tolist() + [nt - 1]))
+    else:
+        restart_indices = [nt - 1]
+    C_3d_history = np.zeros((len(restart_indices), N_CLASSES, N, M, L),
+                            dtype=np.float32)
+    restart_idx_set = {int(i): k for k, i in enumerate(restart_indices)}
+    print(f"  will store {len(restart_indices)} C_3d restart snapshots "
+          f"(stride={restart_interval_hours}h)")
+
     print(f"\nRunning 3D model: {N_CLASSES} classes, {nt} timesteps")
     for ic in range(N_CLASSES):
         print(f"  {CLASS_NAMES[ic]}: ws={params['ws'][ic]*1000:.2f} mm/s, "
@@ -568,6 +628,8 @@ def run(croco_file, ww3_file, grd_file, yorig, params=None, out_dir=None,
     C_surface_all[0] = C_total0[-1]
     C_bottom_all[0] = C_total0[0]
     C_bottom_per_class[:, 0] = C[:, 0]
+    if 0 in restart_idx_set:
+        C_3d_history[restart_idx_set[0]] = C.astype(np.float32)
 
     # --- Main timestep loop ---
     for t in range(1, nt):
@@ -635,6 +697,10 @@ def run(croco_file, ww3_file, grd_file, yorig, params=None, out_dir=None,
         total_mass = np.sum(C.sum(axis=0) * Hz * grid['area'] * grid['mask_rho'])
         mass_history[t] = total_mass
 
+        # Store C_3d snapshot if this step is a restart index
+        if t in restart_idx_set:
+            C_3d_history[restart_idx_set[t]] = C.astype(np.float32)
+
         # Progress
         if t % 24 == 0 or t == nt - 1:
             c_max = float(np.nanmax(C))
@@ -651,21 +717,19 @@ def run(croco_file, ww3_file, grd_file, yorig, params=None, out_dir=None,
     # --- Write output ---
     print("\nWriting output...")
     out_file = os.path.join(out_dir, out_file_name)
-    # Final 3D state as a restart snapshot (single time slice).
-    # Stored with a leading time dim of size 1 so ini_time_index is
-    # future-proof for multi-snapshot restart files.
-    C_3d_snapshot = C[np.newaxis, ...].astype(np.float32)      # (1, sed_class, N, M, L)
-    restart_times = croco_times[-1:]                            # (1,)
+    # 3D restart snapshots (one per index in restart_indices).
+    restart_times = croco_times[np.array(restart_indices)]
     write_output(out_file, croco_times, C_surface_all, C_bottom_all,
                  C_bottom_per_class, tau_max_all, mass_history, grid, params,
-                 C_3d=C_3d_snapshot, restart_times=restart_times)
+                 C_3d=C_3d_history, restart_times=restart_times,
+                 ubr_scale=ubr_scale)
 
     return out_file
 
 
 def write_output(out_file, times, C_surface, C_bottom, C_bottom_per_class,
                  tau_max, mass, grid, params,
-                 C_3d=None, restart_times=None):
+                 C_3d=None, restart_times=None, ubr_scale=1.0):
     """Write model output to NetCDF."""
     ds = xr.Dataset()
 
@@ -691,6 +755,7 @@ def write_output(out_file, times, C_surface, C_bottom, C_bottom_per_class,
     ds.coords['lat_rho'] = xr.DataArray(grid['lat_rho'], dims=['eta_rho', 'xi_rho'])
 
     ds.attrs['C_bg'] = params['C_bg']
+    ds.attrs['ubr_scale'] = ubr_scale
     for ic in range(N_CLASSES):
         ds.attrs[f'ws_{ic}'] = params['ws'][ic]
         ds.attrs[f'M_{ic}'] = params['M'][ic]
@@ -927,7 +992,16 @@ if __name__ == '__main__':
     run_parser.add_argument('--ini_file', default=None,
         help='Optional restart file (previous turbidity output with C_3d variable)')
     run_parser.add_argument('--ini_time_index', type=int, default=-1,
-        help='Time index within --ini_file to load as initial state (default -1, last)')
+        help='0-based time index within --ini_file to load as initial state (default -1, last)')
+    run_parser.add_argument('--ini_time', default=None,
+        help='ISO datetime to match in --ini_file restart_time (overrides --ini_time_index)')
+    run_parser.add_argument('--ubr_scale', type=float, default=1.0,
+                            help='Multiplicative factor applied to WW3 (uubr, vubr) '
+                                 'at load time. Used by the ensemble launcher to '
+                                 'perturb each member by an Hs-error-derived '
+                                 'fraction. Default 1.0 (deterministic).')
+    run_parser.add_argument('--restart_interval_hours', type=int, default=0,
+        help='Interval between C_3d restart snapshots (hours). 0 = last only.')
 
     # --- compare command ---
     cmp_parser = subparsers.add_parser('compare', help='Extract time-series at a point and plot diagnostics')
@@ -962,7 +1036,10 @@ if __name__ == '__main__':
         }
         run(args.croco_file, args.ww3_file, args.grd_file, args.yorig,
             params=params, out_dir=args.out_dir, out_file_name=args.out_file,
-            ini_file=args.ini_file, ini_time_index=args.ini_time_index)
+            ini_file=args.ini_file, ini_time_index=args.ini_time_index,
+            ini_time=args.ini_time,
+            restart_interval_hours=args.restart_interval_hours,
+            ubr_scale=args.ubr_scale)
     elif args.command == 'compare':
         compare(args.turb_file, args.grd_file, args.obs_lon, args.obs_lat,
                 out_dir=args.out_dir, obs_file=args.obs_file)

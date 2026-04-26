@@ -16,6 +16,7 @@ fi
 RUN_DATE_FMT="${RUN_DATE:0:4}-${RUN_DATE:4:2}-${RUN_DATE:6:2} ${RUN_DATE:9:2}:00:00"
 
 # --- Run parameters ---
+# (I don't see a scenario where we have to make HDAYS>0, but if we do just beware - I'm not sure the restart handling will automatically work)
 HDAYS="${HDAYS:-0}"
 FDAYS="${FDAYS:-7}"
 YORIG="${YORIG:-2000}"
@@ -70,3 +71,25 @@ MERCATOR_ANALYSIS_DIR="${MERCATOR_ANALYSIS_DIR:-/home/${USER}/projects/ocean-mot
 # --- WW3 derived paths ---
 WW3_CONFIG_DIR="${WW3_CONFIG_DIR:-${REPO_DIR}/configs/${DOMAIN}/${WW3_MODEL}/forecast}"
 WW3_OPS_DIR="${WW3_OPS_DIR:-${REPO_DIR}/data/ww3_ops/${RUN_DATE}/${DOMAIN}/${WW3_MODEL}}"
+
+# --- Turbidity model identifiers and paths ---
+TURB_MODEL="${TURB_MODEL:-turbidity_v1}"
+TURB_RUN_NAME="${TURB_RUN_NAME:-calib_01}"
+TURB_CODE_DIR="${TURB_CODE_DIR:-${REPO_DIR}/turbidity}"
+TURB_ENV="${TURB_ENV:-somisana_croco}"
+TURB_OPS_DIR="${TURB_OPS_DIR:-${REPO_DIR}/data/turbidity_ops/${RUN_DATE}/${DOMAIN}/${TURB_MODEL}/${TURB_RUN_NAME}}"
+TURB_OUT_FILE="${TURB_OUT_FILE:-turbidity_3d.nc}"
+# Restart snapshots are written every TURB_RST_HOURS hours of model time.
+# Must be consistent across operational cycles so that each new run finds
+# a snapshot at its own RUN_DATE in the previous cycle's output.
+TURB_RST_HOURS="${TURB_RST_HOURS:-6}"
+
+# --- Turbidity sediment parameters (two classes: fine, coarse) ---
+# Defaults match configs/gulf_01/turbidity/hindcast/calib_01 calibration.
+WS_FINE="${WS_FINE:-1e-4}"
+WS_COARSE="${WS_COARSE:-1e-3}"
+M_FINE="${M_FINE:-0.0003}"
+M_COARSE="${M_COARSE:-0.003}"
+TAU_CR_FINE="${TAU_CR_FINE:-0.1}"
+TAU_CR_COARSE="${TAU_CR_COARSE:-0.25}"
+C_BG="${C_BG:-3.0}"

@@ -2,9 +2,16 @@ locations:
   - name: Salmiya
     lat: 29.356870
     lon: 48.111210
+    products: [water_level]
     obs_file: ~/projects/gulf/data/water_level_obs/from_Chris_2024-03-30/postprocess/Salmiya_residuals.nc
 
   - name: Majis
     lat: 24.512053
     lon: 56.637126
+    products: [water_level]
     obs_file: ~/projects/gulf/data/water_level_obs/from_Chris_2024-03-30/postprocess/Majis_residuals.nc
+
+  - name: Dhabiya_reef
+    lat: 24.368937
+    lon: 54.072347
+    products: [turbidity]

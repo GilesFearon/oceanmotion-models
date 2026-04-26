@@ -8,6 +8,8 @@
 #   4. CROCO postprocessing (regridding, water levels) — in parallel
 #   5. WW3 preprocessing (boundary spectra, CROCO-derived forcing) — in parallel
 #   6. WW3 run
+#   7. Turbidity run (uses CROCO + WW3 output)
+#   8. Turbidity postprocessing (per-location ensemble time series)
 #
 # Compilation (ops/croco_ops/compile.sh) is NOT run here — it only needs to
 # happen once, or when cppdefs.h / param_.h change. Run it manually when needed.
@@ -83,6 +85,18 @@ echo ""
 echo ">>> Stage 6: Running WW3"
 bash "${SCRIPT_DIR}/ww3_ops/run_ww3.sh"
 echo ">>> Stage 6: WW3 run complete"
+
+# --- 7. Turbidity run ---
+echo ""
+echo ">>> Stage 7: Running turbidity model"
+bash "${SCRIPT_DIR}/turbidity_ops/run_turbidity_ensemble.sh"
+echo ">>> Stage 7: Turbidity run complete"
+
+# --- 8. Turbidity postprocessing ---
+echo ""
+echo ">>> Stage 8: Postprocessing turbidity ensemble"
+bash "${SCRIPT_DIR}/turbidity_ops/postprocess_turbidity.sh"
+echo ">>> Stage 8: Turbidity postprocessing complete"
 
 echo ""
 echo "=============================================="
