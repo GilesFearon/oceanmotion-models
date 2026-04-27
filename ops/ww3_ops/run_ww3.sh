@@ -123,7 +123,7 @@ RST_FOUND=0
 for i in $(seq 1 ${MAX_RST_STEPS}); do
   prev_epoch=$((RUN_EPOCH - i * 6 * 3600))
   prev_date=$(date -u -d "@${prev_epoch}" +"%Y%m%d_%H")
-  prev_output="${REPO_DIR}/data/ww3_ops/${prev_date}/${DOMAIN}/${WW3_MODEL}/output"
+  prev_output="${REPO_DIR}/data/${prev_date}/ww3_ops/${DOMAIN}/${WW3_MODEL}/output"
   if [ -d "${prev_output}" ]; then
     rst_num=$(printf '%03d' ${i})
     rst_file="${prev_output}/restart${rst_num}.ww3"

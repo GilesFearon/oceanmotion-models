@@ -5,11 +5,13 @@
 #   1. Download forcing (GFS, MERCATOR, MERCATOR_hourly, CMEMS_WAV) — in parallel
 #   2. CROCO preprocessing (tides, boundary/initial conditions) — in parallel
 #   3. CROCO run
-#   4. CROCO postprocessing (regridding, water levels) — in parallel
-#   5. WW3 preprocessing (boundary spectra, CROCO-derived forcing) — in parallel
-#   6. WW3 run
-#   7. Turbidity run (uses CROCO + WW3 output)
-#   8. Turbidity postprocessing (per-location ensemble time series)
+#   4. WW3 preprocessing (boundary spectra, CROCO-derived forcing) — in parallel
+#   5. WW3 run
+#   6. Turbidity ensemble run (uses CROCO + WW3 output)
+#   7. Build data/latest/raw (concatenate raw outputs from prior cycles +
+#      this cycle into the 17-day hindcast/forecast window)
+#   8. Postprocess data/latest/raw → data/latest/postprocess (spatial
+#      zarr regridding + per-location time-series netCDFs)
 #
 # Compilation (ops/croco_ops/compile.sh) is NOT run here — it only needs to
 # happen once, or when cppdefs.h / param_.h change. Run it manually when needed.
@@ -64,39 +66,37 @@ echo ">>> Stage 3: Running CROCO"
 bash "${SCRIPT_DIR}/croco_ops/run_croco.sh"
 echo ">>> Stage 3: CROCO run complete"
 
-# --- 4. CROCO postprocessing (parallel) ---
+# --- 4. WW3 preprocessing (parallel) ---
 echo ""
-echo ">>> Stage 4: CROCO postprocessing"
-bash "${SCRIPT_DIR}/croco_ops/postprocess_regridding.sh" &
-bash "${SCRIPT_DIR}/croco_ops/postprocess_wl.sh"         &
-wait
-echo ">>> Stage 4: CROCO postprocessing complete"
-
-# --- 5. WW3 preprocessing (parallel) ---
-echo ""
-echo ">>> Stage 5: WW3 preprocessing"
+echo ">>> Stage 4: WW3 preprocessing"
 bash "${SCRIPT_DIR}/ww3_ops/make_bry.sh"           &
 bash "${SCRIPT_DIR}/ww3_ops/make_croco_forcing.sh" &
 wait
-echo ">>> Stage 5: WW3 preprocessing complete"
+echo ">>> Stage 4: WW3 preprocessing complete"
 
-# --- 6. WW3 run ---
+# --- 5. WW3 run ---
 echo ""
-echo ">>> Stage 6: Running WW3"
+echo ">>> Stage 5: Running WW3"
 bash "${SCRIPT_DIR}/ww3_ops/run_ww3.sh"
-echo ">>> Stage 6: WW3 run complete"
+echo ">>> Stage 5: WW3 run complete"
 
-# --- 7. Turbidity run ---
+# --- 6. Turbidity run ---
 echo ""
-echo ">>> Stage 7: Running turbidity model"
+echo ">>> Stage 6: Running turbidity model"
 bash "${SCRIPT_DIR}/turbidity_ops/run_turbidity_ensemble.sh"
-echo ">>> Stage 7: Turbidity run complete"
+echo ">>> Stage 6: Turbidity run complete"
 
-# --- 8. Turbidity postprocessing ---
+# --- 7. Build latest/raw from prior cycles + this cycle ---
 echo ""
-echo ">>> Stage 8: Postprocessing turbidity ensemble"
-bash "${SCRIPT_DIR}/turbidity_ops/postprocess_turbidity.sh"
-echo ">>> Stage 8: Turbidity postprocessing complete"
+echo ">>> Stage 7: Building data/latest/raw (17-day window)"
+bash "${SCRIPT_DIR}/postprocess/build_latest_raw.sh"
+echo ">>> Stage 7: latest/raw built"
+
+# --- 8. Postprocess latest/raw → latest/postprocess ---
+echo ""
+echo ">>> Stage 8: Postprocessing latest (spatial + time-series)"
+bash "${SCRIPT_DIR}/postprocess/postprocess_latest.sh"
+echo ">>> Stage 8: latest/postprocess built"
 
 echo ""
 echo "=============================================="

@@ -28,6 +28,7 @@ Untitled.ipynb
 DATASETS_CROCOTOOLS/
 DATA/
 data/
+ops/data/
 
 # croco run-time files 
 # (exclude all directories set up by running a configuration in our directory structure)

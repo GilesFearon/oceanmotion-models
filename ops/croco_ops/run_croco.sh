@@ -29,7 +29,7 @@ for i in $(seq 1 ${MAX_RST_STEPS}); do
   # Calculate previous run date (i * 6 hours back)
   prev_epoch=$((RUN_EPOCH - i * 6 * 3600))
   prev_date=$(date -u -d "@${prev_epoch}" +"%Y%m%d_%H")
-  prev_rst="${REPO_DIR}/data/croco_ops/${prev_date}/${DOMAIN}/${MODEL}/${RUN_NAME}/output/croco_rst.nc"
+  prev_rst="${REPO_DIR}/data/${prev_date}/croco_ops/${DOMAIN}/${MODEL}/${RUN_NAME}/output/croco_rst.nc"
   if [ -f "${prev_rst}" ]; then
     echo "Found restart file: ${prev_rst} (${i} x 6h back)"
     cp "${prev_rst}" "${SCRATCH_DIR}/croco_ini.nc"

@@ -58,9 +58,9 @@ WW3_ENV="${WW3_ENV:-wavespectra}"
 REPO_DIR="${REPO_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 CONFIG_DIR="${CONFIG_DIR:-${REPO_DIR}/configs/${DOMAIN}/${MODEL}/forecast}"
 TPXO_DATA_DIR="${TPXO_DATA_DIR:-/home/gfearon/code/somisana-croco/DATASETS_CROCOTOOLS/TPXO10}/"
-DOWNLOAD_DIR="${DOWNLOAD_DIR:-${REPO_DIR}/data/downloads/${RUN_DATE}/${DOMAIN}}"
+DOWNLOAD_DIR="${DOWNLOAD_DIR:-${REPO_DIR}/data/${RUN_DATE}/downloads/${DOMAIN}}"
 DOMAIN_DOWNLOAD="${DOMAIN_DOWNLOAD:-45,60,21,33}"
-OPS_DIR="${OPS_DIR:-${REPO_DIR}/data/croco_ops/${RUN_DATE}/${DOMAIN}/${MODEL}}"
+OPS_DIR="${OPS_DIR:-${REPO_DIR}/data/${RUN_DATE}/croco_ops/${DOMAIN}/${MODEL}}"
 RUN_NAME="${RUN_NAME:-${COMP}_${INP}_${OGCM}_${TIDE_FRC}}"
 
 # --- Postprocessing paths ---
@@ -70,14 +70,14 @@ MERCATOR_ANALYSIS_DIR="${MERCATOR_ANALYSIS_DIR:-/home/${USER}/projects/ocean-mot
 
 # --- WW3 derived paths ---
 WW3_CONFIG_DIR="${WW3_CONFIG_DIR:-${REPO_DIR}/configs/${DOMAIN}/${WW3_MODEL}/forecast}"
-WW3_OPS_DIR="${WW3_OPS_DIR:-${REPO_DIR}/data/ww3_ops/${RUN_DATE}/${DOMAIN}/${WW3_MODEL}}"
+WW3_OPS_DIR="${WW3_OPS_DIR:-${REPO_DIR}/data/${RUN_DATE}/ww3_ops/${DOMAIN}/${WW3_MODEL}}"
 
 # --- Turbidity model identifiers and paths ---
 TURB_MODEL="${TURB_MODEL:-turbidity_v1}"
 TURB_RUN_NAME="${TURB_RUN_NAME:-calib_01}"
 TURB_CODE_DIR="${TURB_CODE_DIR:-${REPO_DIR}/turbidity}"
 TURB_ENV="${TURB_ENV:-somisana_croco}"
-TURB_OPS_DIR="${TURB_OPS_DIR:-${REPO_DIR}/data/turbidity_ops/${RUN_DATE}/${DOMAIN}/${TURB_MODEL}/${TURB_RUN_NAME}}"
+TURB_OPS_DIR="${TURB_OPS_DIR:-${REPO_DIR}/data/${RUN_DATE}/turbidity_ops/${DOMAIN}/${TURB_MODEL}/${TURB_RUN_NAME}}"
 TURB_OUT_FILE="${TURB_OUT_FILE:-turbidity_3d.nc}"
 # Restart snapshots are written every TURB_RST_HOURS hours of model time.
 # Must be consistent across operational cycles so that each new run finds
@@ -93,3 +93,16 @@ M_COARSE="${M_COARSE:-0.003}"
 TAU_CR_FINE="${TAU_CR_FINE:-0.1}"
 TAU_CR_COARSE="${TAU_CR_COARSE:-0.25}"
 C_BG="${C_BG:-3.0}"
+
+# --- Latest hindcast/forecast publishing tier ---
+# data/latest/{raw,postprocess,web}/{DOMAIN}/... is rebuilt every cycle from
+# the most recent HDAYS_LATEST + FDAYS_LATEST window of per-cycle raw output.
+HDAYS_LATEST="${HDAYS_LATEST:-10}"
+FDAYS_LATEST="${FDAYS_LATEST:-7}"
+# Single source of truth for the regular-grid spacing on which all spatial
+# zarr stores (CROCO, WW3, turbidity) are published. Keeps the front-end
+# free to overlay any product on any other on a shared grid.
+LATEST_GRID_SPACING="${LATEST_GRID_SPACING:-0.01}"
+LATEST_RAW_DIR="${LATEST_RAW_DIR:-${REPO_DIR}/data/latest/raw/${DOMAIN}}"
+LATEST_PP_DIR="${LATEST_PP_DIR:-${REPO_DIR}/data/latest/postprocess/${DOMAIN}}"
+LATEST_WEB_DIR="${LATEST_WEB_DIR:-${REPO_DIR}/data/latest/web/${DOMAIN}}"
